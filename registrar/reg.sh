@@ -1,8 +1,7 @@
 #!/bin/bash -p
-cs1660-whoami
 set -euo pipefail
 
-set -x
+#set -x
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -32,13 +31,20 @@ __is_admin()
     fi
 }
 
-# Nick wrote this in five minutes (I don't know if it's secure)
 __check_effective_user_access()
 {
-    # Better way:  use system calls access() to test if a user can use a file
+    # How an a *really* better way would work:  use system calls 
+    # access() to test if a user can use a file
     # - Change effective UID back to alice
     # - Separate out file loading
     # ....
+    # This version doesn't do that since it's only a bash script
+    # Instead, we spawn a new bash shell to test if the user can read the file.
+    # By default, bash will set euid == uid on startup, so this should ensure the
+    # check happens with euid as the user's real uid.  
+    #
+    # Disclaimer:  Nick came up with this idea and couldn't find a reference
+    # for it anywhere, so we make no claim this is actually secure.
     
     file="$1"
     return $(bash -c "test -r ${file}")
@@ -150,7 +156,7 @@ do_list()
     echo "$(get_enrolled ${course}) students registered in ${course}:  ${remaining} seats remaining"
 
     
-    if __is_admin; then
+    if is_admin; then
 	echo -e "\n\nStudents registered in ${course}:"
 	for s in $(ls -q1 ${dir}); do
 	    echo $s
@@ -167,8 +173,8 @@ main()
 	    ;;
 	add)
 	    shift
-	    add_slightly_better $@
-	    #add $@
+	    add $@
+	    #add_slightly_better $@
 	    ;;
 	drop)
 	;;
